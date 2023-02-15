@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from json import dumps
 
 import aiohttp
 import asyncio
@@ -19,6 +20,10 @@ logger = get_logger(__name__)
 URL = "https://api.privatbank.ua/p24api/exchange_rates?json&date="
 
 
+currency_value = ["USD",
+                  "EUR"]
+
+
 def valid_urls(url, count_day):
     now_day = datetime.now()
     new_url = list()
@@ -34,12 +39,24 @@ def valid_urls(url, count_day):
     return new_url
 
 
+def handler_json(json_text):
+    result = dict()
+    for exchange_rate in json_text["exchangeRate"]:
+        if len(result) == 0:
+            result.update([(json_text["date"], dict())])
+        if exchange_rate["currency"] in currency_value:
+            currency = {exchange_rate["currency"]: {"sale": exchange_rate["saleRate"], "purchase": exchange_rate["purchaseRate"]}}
+            result[json_text["date"]].update(currency)
+    return result
+
+
 async def request(url, session):
     try:
         async with session.get(url) as response:
             if response.status == 200:
                 r = await response.json()
-                return r
+                result = handler_json(r)
+                return result
             logger.error(f"Error status {response.status} for {url}")
     except aiohttp.ClientConnectorError as e:
         logger.error(f"Connection error {url}: {e}")
@@ -49,13 +66,14 @@ async def request(url, session):
 async def main(value=days):
     if value > 10 or value < 1:
         result = f"Please enter valid days 1....10"
-        logger.info(result)
+        logger.error(result)
+        return result
     else:
         urls = valid_urls(URL, value)
         async with aiohttp.ClientSession() as session:
             list_function = [request(url, session) for url in urls]
             result = await asyncio.gather(*list_function)
-            return result
+            return dumps(result, indent=4)
 
 
 if __name__ == "__main__":
