@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import platform
-from typing import List, AsyncIterator
 
 from app_parser import *
 from my_logger import get_logger
@@ -35,32 +34,16 @@ def valid_urls(url, count_day):
     return new_url
 
 
-async def get_exchange(url):
-    res = await request(url)
-    return res
-
-
-async def request(url):
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    r = await response.json()
-                    return r
-                logger.error(f"Error status {response.status} for {url}")
-        except aiohttp.ClientConnectorError as e:
-            logger.error(f"Connection error {url}: {e}")
-        return None
-
-
-async def get_url_async(url: str):
-    json_data = await request(url)
-    return json_data
-
-
-async def get_url(urls: List[str]) -> AsyncIterator:
-    for url in urls:
-        yield get_url_async(url)
+async def request(url, session):
+    try:
+        async with session.get(url) as response:
+            if response.status == 200:
+                r = await response.json()
+                return r
+            logger.error(f"Error status {response.status} for {url}")
+    except aiohttp.ClientConnectorError as e:
+        logger.error(f"Connection error {url}: {e}")
+    return None
 
 
 async def main(value=days):
@@ -69,10 +52,10 @@ async def main(value=days):
         logger.info(result)
     else:
         urls = valid_urls(URL, value)
-        result = []
-        async for url in get_url(urls):
-            result.append(url)
-        return await asyncio.gather(*result)
+        async with aiohttp.ClientSession() as session:
+            list_function = [request(url, session) for url in urls]
+            result = await asyncio.gather(*list_function)
+            return result
 
 
 if __name__ == "__main__":

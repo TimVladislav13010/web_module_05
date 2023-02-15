@@ -5,7 +5,7 @@ import argparse
 Parser command in script.
 
 Commands for script.
-py main.py --days -d value
+py main_old.py --days -d value
 """
 
 
