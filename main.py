@@ -1,9 +1,9 @@
+import asyncio
+import platform
 from datetime import datetime, timedelta
 from json import dumps
 
 import aiohttp
-import asyncio
-import platform
 
 from app_parser import *
 from my_logger import get_logger
@@ -81,4 +81,4 @@ if __name__ == "__main__":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     results = asyncio.run(main())
-    print(results)
+    logger.info(results)
