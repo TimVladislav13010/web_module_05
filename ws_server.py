@@ -37,9 +37,22 @@ class Server:
 
     async def distrubute(self, ws: WebSocketServerProtocol):
         async for message in ws:
-            if "exchange" in message:
-                await self.send_to_clients(f"{await exchange_chat(1)}")
-            await self.send_to_clients(f"{ws.name}: {message}")
+            days_exchange = valid_exchange(message)
+            if days_exchange:
+                await self.send_to_clients(f"{ws.name}: {await exchange_chat(days_exchange)}")
+            else:
+                await self.send_to_clients(f"{ws.name}: {message}")
+
+
+def valid_exchange(message):
+    arg = message.split(" ")
+    print(arg)
+    if len(arg) == 2 and arg[0].lower() in "exchange" and (0 < int(arg[1]) < 11):
+        return int(arg[1])
+    elif len(arg) == 1 and arg[0].lower() in "exchange":
+        return 1
+    else:
+        return False
 
 
 async def main():
