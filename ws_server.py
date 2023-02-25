@@ -5,6 +5,8 @@ import names
 from websockets import WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK
 
+from main import exchange_chat
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -35,7 +37,9 @@ class Server:
 
     async def distrubute(self, ws: WebSocketServerProtocol):
         async for message in ws:
-             await self.send_to_clients(f"{ws.name}: {message}")
+            if "exchange" in message:
+                await self.send_to_clients(f"{await exchange_chat(1)}")
+            await self.send_to_clients(f"{ws.name}: {message}")
 
 
 async def main():

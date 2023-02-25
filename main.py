@@ -5,12 +5,15 @@ from json import dumps
 
 import aiohttp
 
-from app_parser import *
+from app_parser import arg_parser
 from my_logger import get_logger
 
 
 """
 A console utility that returns the EUR and USD rate to PrivatBank over the past few days.
+
+Commands for script.
+py main.py --days -d value [--currency -c value -> CHF,CZK,EUR,GBP,PLN,USD]
 """
 
 
@@ -81,7 +84,8 @@ async def request(url: str, session: aiohttp.ClientSession) -> dict | None:
     return None
 
 
-async def main(value=days) -> str:
+async def main():
+    days, currency = arg_parser()
     if currency:
         global currency_value
         currency_arg = handler_arg_currency(currency)
@@ -89,22 +93,36 @@ async def main(value=days) -> str:
             currency_value = [*currency_value, *currency_arg]
         logger.info(f"Show currency: {currency_value}")
 
-    if value > 10 or value < 1:
+    if days > 10 or days < 1:
         result = f"Please enter valid days 1....10"
         logger.error(result)
         return result
 
     else:
-        urls = valid_urls(URL, value)
-        async with aiohttp.ClientSession() as session:
-            list_function = [request(url, session) for url in urls]
-            result = await asyncio.gather(*list_function)
-            return dumps(result, indent=4)
+        result = await exchange(days)
+        return result
+
+
+async def exchange(value):
+    urls = valid_urls(URL, value)
+    async with aiohttp.ClientSession() as session:
+        list_function = [request(url, session) for url in urls]
+        result = await asyncio.gather(*list_function)
+        return dumps(result, indent=4)
+
+
+async def exchange_chat(value: int):
+    if value > 10 or value < 1:
+        result = f"Please enter valid days 1....10"
+        logger.error(result)
+        return result
+    else:
+        result = await exchange(value)
+        return result
 
 
 if __name__ == "__main__":
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
     results = asyncio.run(main())
-    logger.info(results)
+    print(results)
